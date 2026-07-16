@@ -1,6 +1,6 @@
 # 🏏 Cricket Match Simulator & Data Collector System
 
-A complete, 100% accurate cricket match simulation and data collection platform with offline phone app and desktop console simulator.
+A complete, 100% accurate cricket match simulation platform with desktop console simulator.
 
 **Project Status**: ✅ COMPLETE & READY TO USE
 
@@ -23,24 +23,6 @@ A complete, 100% accurate cricket match simulation and data collection platform 
 - ✅ Real-time leaderboards
 - ✅ Special awards (Super Striker, Boundary Rider, etc.)
 
-### Phone PWA (Progressive Web App)
-- ✅ Offline-first data collection
-- ✅ IndexedDB local storage
-- ✅ Real-time ball entry
-- ✅ Match tracking
-- ✅ Offline functionality (works without internet)
-- ✅ Installable on home screen
-- ✅ Responsive mobile design
-- ✅ Service Worker caching
-
-### Sync Mechanism
-- ✅ Phone-to-laptop data synchronization
-- ✅ Sync code generation (for manual transfer)
-- ✅ Automatic server sync (with Flask backend)
-- ✅ Data export/import
-- ✅ Conflict resolution
-- ✅ Detailed sync logs
-
 ---
 
 ## 🚀 Quick Start
@@ -48,12 +30,10 @@ A complete, 100% accurate cricket match simulation and data collection platform 
 ### Prerequisites
 - Python 3.10+
 - SQLite3 (included with Python)
-- Modern web browser (Chrome, Firefox, Edge, Safari)
-- Phone/Tablet with mobile browser
 
 ### Installation
 
-#### 1. Desktop Console Simulator
+### Desktop Console Simulator
 
 ```bash
 # Navigate to project folder
@@ -66,51 +46,10 @@ pip install -r requirements.txt
 python desktop_simulator/main.py
 ```
 
-#### 2. Phone App (PWA)
-
-```bash
-# Option A: Local HTTP Server
-cd phone_app
-python -m http.server 8000
-
-# Then open browser: http://localhost:8000
-```
-
-```bash
-# Option B: Deploy to web server
-# Copy phone_app folder to any web server
-# Access via HTTPS (required for PWA)
-```
-
-#### 3. Sync Server (Optional)
-
-```bash
-# Install Flask
-pip install flask flask-cors
-
-# Run sync server
-python sync_server.py
-
-# Server runs on http://localhost:5000
-```
-
 ---
 
-## 📱 Using the Phone App
+## 📱 Using the Simulator
 
-1. **Open the app** in mobile browser or install as PWA
-2. **Create Match**: Tap "+ New Match" button
-3. **Enter Data**:
-   - Select match
-   - Tap "Record Ball"
-   - Select runs (0-6)
-   - Choose extras (if any)
-   - Select wicket type (if out)
-4. **View Scorecard**: See live match score
-5. **Sync Data**:
-   - Tap "Sync" tab
-   - Copy sync code
-   - OR sync to server with URL
 
 ---
 
@@ -213,48 +152,13 @@ d:\New project/
 │   ├── ui_console.py           # Console UI
 │   ├── match_state_manager.py  # Pause/resume
 │   └── cricket_data.db         # SQLite database
-├── phone_app/
-│   ├── index.html              # PWA interface
-│   ├── manifest.json           # PWA manifest
-│   ├── sw.js                   # Service Worker
-│   ├── css/styles.css          # Styling
-│   └── js/
-│       ├── app.js              # Main app
-│       ├── db.js               # IndexedDB
-│       ├── ui.js               # UI logic
-│       └── sync.js             # Sync logic
 ├── tests/
 │   ├── test_cricket_logic.py   # Cricket tests
 │   ├── test_fantasy_points.py  # Fantasy tests
 │   ├── test_strike_rotation.py # Rotation tests
 │   └── test_database.py        # Database tests
-├── sync_server.py              # Flask sync server
 ├── requirements.txt            # Python dependencies
 └── README.md                   # This file
-```
-
----
-
-## 🔄 Sync Workflow
-
-### Phone → Laptop (Via Sync Code)
-
-```
-1. Enter data on phone
-2. Tap "Sync" → "Copy Sync Code"
-3. Paste code on laptop
-4. Desktop imports data
-5. Data merged into database
-```
-
-### Phone → Laptop (Via Server)
-
-```
-1. Enter data on phone
-2. Configure server URL in settings
-3. Tap "Sync Data"
-4. Data sent to Flask server
-5. Laptop retrieves from server
 ```
 
 ---
@@ -285,18 +189,7 @@ d:\New project/
 - Wides/no-balls don't count
 - Decimal format: 5.3 = 5 overs 3 balls
 
----
 
-## 🛠️ API Endpoints (Sync Server)
-
-```
-POST   /sync              # Receive phone sync data
-POST   /sync/import       # Import from sync code
-GET    /sync/list         # List all syncs
-GET    /sync/stats        # Sync statistics
-POST   /sync/retrieve     # Get specific sync file
-GET    /health            # Health check
-```
 
 ---
 
