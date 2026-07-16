@@ -72,5 +72,4 @@ Thumbs.db
 # Project specific
 run_logs/
 match_logs/
-sync_logs/
 *.bak

@@ -6,13 +6,10 @@
 1. [README.md](README.md) - Overview & features
 2. [SETUP.md](SETUP.md) - Installation & deployment
 3. `python desktop_simulator/main.py` - Run simulator
-4. `cd phone_app && python -m http.server 8000` - Run phone app
 
 ### 📚 Documentation
 - [README.md](README.md) - Features, usage, quick start
 - [SETUP.md](SETUP.md) - Complete setup guide
-- [TESTS_SUMMARY.md](TESTS_SUMMARY.md) - Test documentation
-- [PROJECT_COMPLETION.md](PROJECT_COMPLETION.md) - Completion summary
 - [This file](INDEX.md) - Complete project index
 
 ---
@@ -23,11 +20,9 @@
 ```
 ├── README.md               👈 START HERE
 ├── SETUP.md               📖 Setup guide
-├── TESTS_SUMMARY.md       🧪 Test info
-├── PROJECT_COMPLETION.md  ✅ Completion report
 ├── INDEX.md               📑 This file
 ├── requirements.txt       🔧 Dependencies
-└── sync_server.py         🌐 Sync server
+└── LICENSE                📄 License
 ```
 
 ### Desktop Simulator Module
@@ -40,21 +35,6 @@ desktop_simulator/
 ├── fantasy_engine.py     (300 lines)  Fantasy points
 ├── ui_console.py         (300 lines)  Console UI
 └── match_state_manager.py (100 lines) Pause/resume
-```
-
-### Phone App (PWA)
-```
-phone_app/
-├── index.html            (200 lines) Main interface
-├── manifest.json         PWA metadata
-├── sw.js                 Service Worker
-├── css/
-│   └── styles.css        (400 lines) Responsive design
-└── js/
-    ├── app.js            (50 lines)  Initialization
-    ├── db.js             (300 lines) IndexedDB wrapper
-    ├── ui.js             (400 lines) Event handling
-    └── sync.js           (200 lines) Sync logic
 ```
 
 ### Test Suite
@@ -81,21 +61,9 @@ pip install -r requirements.txt
 python desktop_simulator/main.py
 ```
 
-### Run Phone App
-```bash
-cd phone_app
-python -m http.server 8000
-# Open: http://localhost:8000
-```
-
 ### Run Tests
 ```bash
 pytest tests/ -v
-```
-
-### Run Sync Server
-```bash
-python sync_server.py
 ```
 
 ---
@@ -106,17 +74,13 @@ python sync_server.py
 - **README.md** - What can this system do?
 - **SETUP.md** - How do I install it?
 - [Using Desktop Simulator](#desktop-simulator-usage)
-- [Using Phone App](#phone-app-usage)
 
 ### For Developers
-- **TESTS_SUMMARY.md** - How are things tested?
-- **PROJECT_COMPLETION.md** - What's implemented?
 - [Architecture](#architecture)
 - [Code Files](#code-file-descriptions)
 
 ### For Deployment
 - **SETUP.md** - Production deployment section
-- [Deployment Instructions](#production-deployment)
 
 ---
 
@@ -158,38 +122,6 @@ python sync_server.py
 
 ---
 
-## 📱 Phone App Usage
-
-### Main Tabs
-1. **Matches** - View all recorded matches
-2. **Data Entry** - Record new balls
-3. **Sync** - Transfer data to laptop
-4. **Settings** - Configure app
-
-### Recording a Match
-1. Tap "Matches" tab
-2. Tap "+ New Match"
-3. Enter: Name, Team Size, Total Overs
-4. Confirm
-
-### Recording Balls
-1. Tap "Data Entry" tab
-2. Select match
-3. Tap "+ Record Ball"
-4. Select runs: 0, 1, 2, 3, 4, 6
-5. Choose extras: none, wide, no-ball, leg-bye, bye
-6. Choose wicket type if out
-7. Confirm
-
-### Syncing Data
-1. Tap "Sync" tab
-2. Copy displayed sync code
-3. Send to laptop via sync server or manual
-4. Desktop imports code
-5. Data now on both devices
-
----
-
 ## 🧪 Testing
 
 ### Run Tests
@@ -224,7 +156,7 @@ pytest tests/test_cricket_logic.py::TestStrikeRotation::test_odd_run_rotation -v
 
 ### SQLite Database
 - **File**: `cricket_data.db` (auto-created)
-- **Tables**: 11 normalized tables
+- **Tables**: 10 normalized tables
 - **Location**: `d:\New project\`
 
 ### Main Tables
@@ -238,7 +170,6 @@ pytest tests/test_cricket_logic.py::TestStrikeRotation::test_odd_run_rotation -v
 8. **fantasy_stats** - Fantasy points
 9. **global_rankings** - Leaderboards
 10. **team_members** - Team rosters
-11. **sync_log** - Sync history
 
 ### Access Database
 ```bash
@@ -255,42 +186,12 @@ SELECT * FROM fantasy_stats;
 
 ---
 
-## 🌐 Sync Mechanism
-
-### How Sync Works
-
-**Phone → Laptop (Automatic)**
-1. Phone records balls in IndexedDB
-2. Tap "Sync" to generate sync code
-3. Copy code to laptop
-4. Desktop imports code
-5. Data merged into SQLite
-
-**Sync Server (Optional)**
-1. Start sync server: `python sync_server.py`
-2. Configure URL in phone settings
-3. Phone auto-syncs periodically
-4. Server stores sync data
-5. Laptop retrieves from server
-
-### API Endpoints
-```
-POST   /sync              Receive sync data
-GET    /sync/stats        Get sync statistics
-GET    /sync/list         List all syncs
-POST   /sync/import       Import from sync code
-GET    /health            Health check
-```
-
----
-
 ## 🏗️ Architecture
 
 ### Layers
 
 **UI Layer**
 - Desktop: Console (colorama, prettytable)
-- Phone: Web (HTML5, CSS3, JavaScript)
 
 **Business Logic Layer**
 - MatchEngine - Simulate balls
@@ -299,16 +200,12 @@ GET    /health            Health check
 
 **Data Access Layer**
 - DatabaseManager - SQLite operations
-- CricketDB - IndexedDB operations
 
 **Storage Layer**
 - SQLite3 (desktop)
-- IndexedDB (phone)
-- Flask server (sync)
 
 ### Design Patterns
 - MVC - Desktop simulator
-- Event-driven - Phone app
 - Repository - Database access
 - Singleton - Database connections
 
@@ -320,7 +217,7 @@ GET    /health            Health check
 **Purpose**: Application entry point and menu system
 **Key Classes**: `CricketSimulator`
 **Key Methods**:
-- `main_menu()` - Tab navigation
+- `main_menu()` - Menu navigation
 - `create_new_match()` - Match setup
 - `run_match()` - Main simulation loop
 - `manage_players()` - Player management
@@ -331,312 +228,111 @@ GET    /health            Health check
 **Key Features**: Type hints, dataclass decorators
 
 ### desktop_simulator/database_manager.py
-**Purpose**: SQLite operations
-**Key Class**: `DatabaseManager`
-**Key Methods**: 30+ CRUD operations
-**Tables**: 11 normalized tables
+**Purpose**: SQLite database operations
+**Key Classes**: `DatabaseManager`
+**Key Methods**:
+- `add_player()` - Insert player
+- `create_match()` - Create match record
+- `add_ball()` - Record ball
+- `get_statistics()` - Query stats
 
 ### desktop_simulator/match_engine.py
-**Purpose**: Ball-by-ball simulation
-**Key Class**: `MatchEngine`
+**Purpose**: Cricket simulation logic
+**Key Classes**: `MatchEngine`
 **Key Methods**:
-- `start_innings()` - Initialize innings
-- `simulate_ball()` - Main simulation loop
-- `_determine_ball_outcome()` - Ball probability
-- `_rotate_strike()` - Strike rotation logic
+- `simulate_ball()` - Generate one ball
+- `check_wicket()` - Determine if out
+- `calculate_runs()` - Compute runs
+- `rotate_strike()` - Update batsman
 
 ### desktop_simulator/fantasy_engine.py
 **Purpose**: Fantasy points calculation
-**Key Class**: `FantasyEngine`
+**Key Classes**: `FantasyEngine`
 **Key Methods**:
-- `calculate_batting_points()`
-- `calculate_bowling_points()`
-- `determine_super_striker()`
-- `determine_mvp()`
-
-### desktop_simulator/ui_console.py
-**Purpose**: Console display formatting
-**Key Class**: `ConsoleUI`
-**Key Methods**: Display methods with colorama formatting
-**Features**: Colored output, formatted tables, user input
+- `calculate_batting_points()` - Batter fantasy points
+- `calculate_bowling_points()` - Bowler fantasy points
+- `get_leaderboard()` - Fantasy ranking
+- `award_special_awards()` - Special achievements
 
 ### desktop_simulator/match_state_manager.py
-**Purpose**: Pause/resume functionality
-**Key Class**: `MatchStateManager`
-**Key Methods**: Save/load match state
+**Purpose**: Match pause/resume functionality
+**Key Classes**: `MatchStateManager`
+**Key Methods**:
+- `save_state()` - Save match state
+- `load_state()` - Restore match state
+- `pause_match()` - Pause simulation
+- `resume_match()` - Continue simulation
 
-### phone_app/index.html
-**Purpose**: PWA user interface
-**Structure**: 4 tabs + modals
-**Features**: Responsive design, touch-friendly
-
-### phone_app/css/styles.css
-**Purpose**: Responsive styling
-**Design System**: Mobile-first with cricket green theme
-**Features**: Flexbox layout, animations, media queries
-
-### phone_app/js/db.js
-**Purpose**: IndexedDB database wrapper
-**Key Class**: `CricketDB`
-**Key Methods**: 15+ database operations
-**Stores**: matches, balls, players
-
-### phone_app/js/ui.js
-**Purpose**: Event handling and UI management
-**Key Class**: `CricketUI`
-**Key Methods**: 20+ UI interaction methods
-**Features**: Modal management, form handling, notifications
-
-### phone_app/js/sync.js
-**Purpose**: Data synchronization
-**Key Functions**: `syncToLaptop()`, `sendToServer()`, `importSyncCode()`
-**Features**: Sync code generation, auto-sync capability
-
-### phone_app/sw.js
-**Purpose**: Service Worker for offline support
-**Features**: Asset caching, network fallback, offline serving
-
-### sync_server.py
-**Purpose**: Flask backend for sync
-**Key Routes**: /sync, /sync/stats, /sync/list
-**Features**: Data reception, sync logging, statistics
+### desktop_simulator/ui_console.py
+**Purpose**: Console UI components
+**Key Classes**: `UIConsole`
+**Key Methods**:
+- `display_scorecard()` - Show match score
+- `display_menu()` - Show menu
+- `get_user_input()` - Input handling
+- `format_stats_table()` - Format statistics
 
 ---
 
-## 🧪 Test Coverage
+## 🧪 Test Files
 
 ### test_cricket_logic.py
-Tests for core cricket mechanics:
-- Strike rotation (all combinations)
-- All-out conditions (custom team sizes)
-- Wicket dismissals (6 types)
-- Extras (4 types)
+Tests for cricket simulation logic:
+- Strike rotation (odd/even runs)
+- Wicket types (all 6 types)
+- Extras handling (wides, no-balls, etc)
+- All-out conditions
 - Over progression
-- Maiden overs
-- Dot balls
 
 ### test_fantasy_points.py
-Tests for fantasy point calculation:
-- Batting points
-- Bowling points
-- Dismissal bonuses
-- Maiden over bonuses
-- Strike rate penalties
-- Economy penalties
+Tests for fantasy points:
+- Batting points calculation
+- Bowling points calculation
+- Leaderboard functionality
 - Special awards
-- Leaderboards
+- Edge cases and boundaries
 
 ### test_strike_rotation.py
-Dedicated strike rotation tests:
-- Single runs
-- Multiple runs
+Comprehensive strike rotation tests:
+- Single runs (1, 3, 5)
+- Pairs (2, 4, 6)
+- Boundaries
+- Wickets
 - End of over
-- Wicket scenarios
-- Multiple batters
 
 ### test_database.py
 Database operation tests:
-- Table creation
-- Player CRUD
-- Match persistence
-- Ball history
-- Custom SQL
+- Player CRUD operations
+- Match creation
+- Ball recording
+- Statistics retrieval
+- Database integrity
 
 ---
 
-## 🚀 Deployment
+## 📦 Dependencies
 
-### Desktop - Standalone Executable
-```bash
-pip install pyinstaller
-pyinstaller --onefile desktop_simulator/main.py
-```
+### Core
+- `sqlite3` - Database (built-in)
+- `python-dateutil` - Date handling
+- `pytz` - Timezone support
 
-### Phone - Web Hosting
-```bash
-# Netlify
-netlify deploy --prod --dir=phone_app
+### UI
+- `colorama` - Terminal colors
+- `prettytable` - Table formatting
 
-# GitHub Pages
-git push origin gh-pages
-```
-
-### Sync Server - Production
-```bash
-# Docker
-docker build -t cricket-sync .
-docker run -p 5000:5000 cricket-sync
-
-# Gunicorn
-gunicorn -w 4 sync_server:app
-```
+### Testing
+- `pytest` - Test framework
+- `pytest-cov` - Code coverage
 
 ---
 
-## 🔄 Workflow Examples
+## 🚀 Next Steps
 
-### Example 1: Record IPL Match
-1. Start desktop simulator
-2. Create match: "CSK vs MI"
-3. Create teams with players
-4. Simulate match ball-by-ball
-5. View fantasy leaderboard
-6. Export results
+1. ✅ Install dependencies: `pip install -r requirements.txt`
+2. ✅ Run tests: `pytest tests/ -v`
+3. ✅ Start simulator: `python desktop_simulator/main.py`
+4. ✅ Create matches and simulate cricket
+5. ✅ View statistics and leaderboards
 
-### Example 2: Field Data Collection
-1. Open phone app
-2. Create match on field
-3. Record balls as they occur (offline)
-4. Sync when back at office
-5. Desktop simulator receives data
-6. Analyze with fantasy points
-
-### Example 3: Multi-Device Sync
-1. Phone records 50 balls (offline)
-2. Phone generates sync code
-3. Desktop receives code
-4. Data imported to SQLite
-5. Both devices synchronized
-6. Continue recording on phone
-7. Auto-sync to server
-
----
-
-## 📊 Performance
-
-| Operation | Time | Performance |
-|-----------|------|-------------|
-| Simulate 1000 balls | <1s | ✅ Excellent |
-| Phone UI response | <100ms | ✅ Smooth |
-| Database query | <100ms | ✅ Fast |
-| Sync 100 balls | <500ms | ✅ Quick |
-| Test suite | <5s | ✅ Fast |
-
----
-
-## 🔒 Security Features
-
-- ✅ Local-first data storage
-- ✅ Offline by default
-- ✅ Base64 encoded sync codes
-- ✅ CORS protected
-- ✅ No sensitive data transmission
-- ✅ SQLite locking
-- ✅ Input validation
-
----
-
-## 📝 Checklist: First Time Setup
-
-- [ ] Install Python 3.10+
-- [ ] Navigate to project folder
-- [ ] Run: `pip install -r requirements.txt`
-- [ ] Run: `pytest tests/ -v` (verify tests pass)
-- [ ] Run: `python desktop_simulator/main.py`
-- [ ] Create test match in simulator
-- [ ] Open phone app: `cd phone_app && python -m http.server 8000`
-- [ ] Create test match in phone app
-- [ ] Test sync between devices
-- [ ] Check `cricket_data.db` was created
-- [ ] Review fantasy leaderboard
-
----
-
-## 📞 Help & Support
-
-### Getting Help
-1. Check [README.md](README.md) for features
-2. Check [SETUP.md](SETUP.md) for installation issues
-3. Check [TESTS_SUMMARY.md](TESTS_SUMMARY.md) for usage examples
-4. Check test files for code examples
-5. Review inline code comments
-
-### Common Issues
-
-**Desktop won't start**
-```bash
-pip install -r requirements.txt
-python desktop_simulator/main.py
-```
-
-**Phone app won't load**
-```bash
-cd phone_app
-python -m http.server 8000
-# Open: http://localhost:8000
-```
-
-**Tests failing**
-```bash
-pip install --upgrade pytest
-pytest tests/ -v
-```
-
-**Sync not working**
-```bash
-python sync_server.py
-# Configure URL in phone app
-```
-
----
-
-## 🎯 Key Features by Component
-
-### Desktop Simulator ✅
-- [x] Ball-by-ball simulation
-- [x] Strike rotation
-- [x] All wicket types
-- [x] Fantasy points
-- [x] Pause/resume
-- [x] Global rankings
-- [x] Special awards
-
-### Phone App ✅
-- [x] Offline data entry
-- [x] Real-time scorecard
-- [x] PWA installable
-- [x] Service Worker
-- [x] Auto-sync
-- [x] Mobile responsive
-
-### Sync ✅
-- [x] Sync code generation
-- [x] Server sync
-- [x] Data export/import
-- [x] Conflict resolution
-
----
-
-## 📈 Statistics
-
-| Metric | Value |
-|--------|-------|
-| Total Files | 22 |
-| Total Lines of Code | ~11,500 |
-| Test Cases | 150+ |
-| Code Coverage | 100% |
-| Test Pass Rate | 100% |
-| Database Tables | 11 |
-| API Endpoints | 6+ |
-
----
-
-## 🎉 You're All Set!
-
-Your complete cricket data collection system is ready:
-
-✅ **100% Complete**
-✅ **Fully Tested** (150+ tests)
-✅ **Production Ready**
-✅ **Well Documented**
-✅ **Easy to Deploy**
-
-**Start using it now! 🏏**
-
----
-
-**Last Updated**: January 2025
-**Status**: Complete & Ready for Use
-**Quality Level**: Production Ready
-
-For questions or issues, refer to the documentation files or review the test cases for usage examples.
+**Your cricket simulator is ready! 🏏**

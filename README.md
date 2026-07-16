@@ -104,7 +104,6 @@ python desktop_simulator/main.py
 - **bowling_stats**: Bowling statistics per innings
 - **fantasy_stats**: Fantasy points per player per match
 - **global_rankings**: Cumulative leaderboard
-- **sync_log**: Phone-laptop sync history
 
 ---
 
@@ -184,23 +183,6 @@ d:\New project/
 - Wides/no-balls don't count
 - Decimal format: 5.3 = 5 overs 3 balls
 
-
-
----
-
-## 📱 PWA Installation
-
-### Android
-1. Open app in Chrome
-2. Tap menu → "Install app"
-3. Confirm installation
-4. App appears on home screen
-
-### iOS
-1. Open app in Safari
-2. Tap share → "Add to Home Screen"
-3. App appears on home screen
-
 ---
 
 ## ⚙️ Configuration
@@ -210,18 +192,6 @@ d:\New project/
 - Players added through menu
 - Custom team sizes supported
 - Match state saved automatically
-
-### Phone App
-- Settings tab for configuration
-- Auto-sync interval: 5 minutes (configurable)
-- IndexedDB storage (offline)
-- Sync URL can be set
-
-### Sync Server
-- Default port: 5000
-- Synced data saved in `synced_data/` folder
-- Sync logs in `sync_log.txt`
-- Database: `cricket_data.db`
 
 ---
 
@@ -237,34 +207,6 @@ Error: Module not found
 
 Error: Port already in use
 → Change port in configuration
-```
-
-### Phone App
-```
-Data not persisting
-→ Check browser's storage quota
-→ Clear cache and reload
-
-Can't install PWA
-→ Must use HTTPS (except localhost)
-→ Browser must support PWA
-
-Sync not working
-→ Check network connection
-→ Verify server URL is correct
-```
-
-### Sync Server
-```
-Connection refused
-→ Verify server is running on correct port
-
-CORS errors
-→ Check Flask-CORS is installed
-
-Data not importing
-→ Verify sync code format
-→ Check file permissions
 ```
 
 ---
@@ -317,62 +259,3 @@ for _ in range(100):
 - ✅ Fantasy point calculation (IPL official)
 
 ---
-
-## 🔐 Data Security
-
-- All phone data stored locally (IndexedDB)
-- Sync codes are Base64 encoded
-- No data transmitted without permission
-- Server syncs stored with timestamp
-- All operations logged
-
----
-
-## 📈 Performance
-
-- Desktop: Handles 1000+ ball simulations easily
-- Phone: Smooth UI even with 1000+ balls stored
-- Sync: Fast code generation & transfer
-- Database: Optimized indexes for queries
-
----
-
-## 🎯 Next Features (Optional)
-
-- Real live score updates
-- Multi-device sync
-- Cloud backup
-- Advanced analytics
-- Video integration
-- Social sharing
-
----
-
-## 📞 Support
-
-For issues or questions:
-1. Check troubleshooting section
-2. Review test cases for usage examples
-3. Check sync logs for detailed error information
-4. Verify database integrity
-
----
-
-## 📄 License
-
-This project is created for cricket data collection and analysis.
-
----
-
-## 🎉 Thank You!
-
-**100% Complete Cricket System Ready to Use!**
-
-- ✅ 150+ unit tests passing
-- ✅ 100% accurate cricket logic
-- ✅ Full offline support
-- ✅ Seamless phone-laptop sync
-- ✅ Professional UI/UX
-- ✅ Production-ready code
-
-**Start collecting cricket data today! 🏏**
