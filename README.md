@@ -48,12 +48,7 @@ python desktop_simulator/main.py
 
 ---
 
-## 📱 Using the Simulator
-
-
----
-
-## 💻 Using Desktop Simulator
+## � Using the Simulator
 
 1. **Start application**: `python desktop_simulator/main.py`
 2. **Manage Players**: Add players with stats
