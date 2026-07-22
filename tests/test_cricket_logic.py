@@ -15,9 +15,9 @@ class TestStrikeRotation(unittest.TestCase):
     
     def setUp(self):
         """Set up test players and match state."""
-        self.striker = Player(name="Striker", batting_avg=40.0)
-        self.non_striker = Player(name="NonStriker", batting_avg=35.0)
-        self.bowler = Player(name="Bowler", bowling_avg=25.0)
+        self.striker = Player(player_id=1, name="Striker", batting_avg=40.0)
+        self.non_striker = Player(player_id=2, name="NonStriker", batting_avg=35.0)
+        self.bowler = Player(player_id=3, name="Bowler", bowling_avg=25.0)
     
     def test_single_run_rotates_strike(self):
         """After 1 run, striker and non-striker swap."""
@@ -309,9 +309,9 @@ class TestMaidenOver(unittest.TestCase):
     
     def test_multiple_maidens_in_spell(self):
         """Bowler can bowl multiple maidens consecutively."""
-        overs = [0, 0, 1, 0, 2, 0]  # 3 maiden overs out of 6
+        overs = [0, 0, 1, 0, 2, 0]  # 4 maiden overs (runs==0) out of 6
         maidens = sum(1 for o in overs if o == 0)
-        self.assertEqual(maidens, 3)
+        self.assertEqual(maidens, 4)
     
     def _is_maiden_over(self, runs):
         """Check if over is maiden."""
@@ -399,13 +399,14 @@ class TestBowlingMetrics(unittest.TestCase):
         self.assertEqual(economy, 6.0)
     
     def test_economy_with_partial_over(self):
-        """Economy with partial over (e.g., 3.2)."""
+        """Economy with partial over (e.g., 3.2 in cricket notation = 3 overs 2 balls)."""
         runs_conceded = 20
-        overs_bowled = 3.2
+        overs_bowled = 3.2  # cricket notation: 3 overs + 2 balls
         economy = self._calculate_economy_rate(runs_conceded, overs_bowled)
-        # 3.2 overs = 3 overs + 2 balls = 3.333... overs in decimal
+        # 3 complete overs + 2 balls = 20 balls = 20/6 real overs ≈ 3.333
+        # economy = 20 / (20/6) = 6.0
         self.assertAlmostEqual(economy, 6.0, places=1)
-    
+
     def test_bowling_average_calculation(self):
         """Bowling average = runs conceded / wickets taken."""
         runs_conceded = 150
@@ -421,10 +422,14 @@ class TestBowlingMetrics(unittest.TestCase):
         self.assertEqual(average, -1)  # Indicates undefined
     
     def _calculate_economy_rate(self, runs_conceded, overs_bowled):
-        """Calculate economy rate."""
+        """Calculate economy rate converting cricket overs notation to real overs."""
         if overs_bowled == 0:
             return 0
-        return runs_conceded / overs_bowled
+        # Convert cricket notation (e.g. 3.2 = 3 overs + 2 balls) to real overs
+        whole_overs = int(overs_bowled)
+        extra_balls = round((overs_bowled - whole_overs) * 10)
+        real_overs = whole_overs + extra_balls / 6.0
+        return runs_conceded / real_overs
     
     def _calculate_bowling_average(self, runs_conceded, wickets_taken):
         """Calculate bowling average."""

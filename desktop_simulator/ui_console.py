@@ -6,8 +6,10 @@ Real-time scorecards, menus, and interactive display.
 from typing import List, Dict, Optional, Tuple
 from prettytable import PrettyTable
 from colorama import Fore, Back, Style, init
-import os
+import subprocess
+import sys
 import time
+import os
 
 # Initialize colorama for cross-platform colors
 init(autoreset=True)
@@ -21,8 +23,11 @@ class ConsoleUI:
         self.screen_width = 120
     
     def clear_screen(self):
-        """Clear console screen."""
-        os.system('cls' if os.name == 'nt' else 'clear')
+        """Clear console screen safely without os.system."""
+        if sys.platform == 'win32':
+            subprocess.run(['cmd', '/c', 'cls'], shell=False, check=False)
+        else:
+            subprocess.run(['clear'], shell=False, check=False)
     
     def print_header(self, title: str):
         """Print formatted header."""
@@ -194,6 +199,16 @@ class ConsoleUI:
         print(table)
         print()
     
+    def display_custom_table(self, title: str, headers: List[str], rows: List[List]):
+        """Display a custom table."""
+        self.print_header(title)
+        table = PrettyTable()
+        table.field_names = headers
+        for row in rows:
+            table.add_row(row)
+        print(table)
+        print()
+
     def get_player_input(self, prompt: str) -> str:
         """Get player input."""
         return input(f"{Fore.CYAN}{prompt}{Style.RESET_ALL}")

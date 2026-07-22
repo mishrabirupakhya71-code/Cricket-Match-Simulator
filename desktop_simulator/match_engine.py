@@ -25,7 +25,21 @@ class MatchEngine:
     
     def __init__(self, match_id: int, team1_id: int, team2_id: int,
                  total_overs: int, team_size: int, db: DatabaseManager):
-        """Initialize match engine."""
+        """Initialize match engine.
+
+        Raises:
+            ValueError: If total_overs < 1, team_size < 2, or IDs are not
+                positive integers.
+        """
+        # --- Input validation ---
+        if not isinstance(total_overs, int) or total_overs < 1:
+            raise ValueError(f"total_overs must be a positive integer, got {total_overs!r}")
+        if not isinstance(team_size, int) or team_size < 2:
+            raise ValueError(f"team_size must be an integer >= 2, got {team_size!r}")
+        for name, val in [("match_id", match_id), ("team1_id", team1_id), ("team2_id", team2_id)]:
+            if not isinstance(val, int) or val < 0:
+                raise ValueError(f"{name} must be a non-negative integer, got {val!r}")
+
         self.match_id = match_id
         self.team1_id = team1_id
         self.team2_id = team2_id
@@ -64,6 +78,9 @@ class MatchEngine:
         """Start an innings. Optional: provide `striker_id`, `non_striker_id`, `bowler_id` to set openers.
 
         If provided IDs are not valid team members they are ignored and defaults are used.
+
+        Raises:
+            ValueError: If a team has fewer than 2 members.
         """
         self.batting_team_id = batting_team_id
         self.bowling_team_id = bowling_team_id
@@ -75,6 +92,11 @@ class MatchEngine:
 
         # Get batting team members (all members are considered "on-field")
         batting_team_members = self.db.get_team_members(batting_team_id)
+        if len(batting_team_members) < 2:
+            raise ValueError(
+                f"Batting team {batting_team_id} must have at least 2 members, "
+                f"got {len(batting_team_members)}"
+            )
         batting_ids = [p.player_id for p in batting_team_members]
         # Update team_size to actual on-field players
         if batting_team_members:
@@ -94,6 +116,10 @@ class MatchEngine:
 
         # Initialize bowler
         bowling_team_members = self.db.get_team_members(bowling_team_id)
+        if not bowling_team_members:
+            raise ValueError(
+                f"Bowling team {bowling_team_id} must have at least 1 member"
+            )
         bowling_ids = [p.player_id for p in bowling_team_members]
         if bowler_id in bowling_ids:
             self.bowler_id = bowler_id
@@ -236,8 +262,12 @@ class MatchEngine:
         """Update stats after a ball."""
         # Update batting stats
         bat_stat = self.batting_stats[self.striker_id]
-        bat_stat.balls_faced += 1
-        bat_stat.runs_scored += ball.runs_off_bat + ball.extra_runs
+        
+        # Wide does not count as a ball faced; no-ball does.
+        if ball.extras_type != 'wide':
+            bat_stat.balls_faced += 1
+            
+        bat_stat.runs_scored += ball.runs_off_bat
         
         if ball.runs_off_bat == 4:
             bat_stat.boundaries += 1
@@ -255,7 +285,23 @@ class MatchEngine:
         
         # Update bowling stats
         bowl_stat = self.bowling_stats[self.bowler_id]
-        bowl_stat.runs_conceded += ball.runs_off_bat + ball.extra_runs
+        
+        # Leg byes and byes do not count against the bowler
+        runs_against_bowler = ball.runs_off_bat
+        if ball.extras_type in ['wide', 'no_ball']:
+            runs_against_bowler += ball.extra_runs
+            
+        bowl_stat.runs_conceded += runs_against_bowler
+        
+        # Increment legal deliveries for overs_bowled
+        if ball.extras_type not in ['wide', 'no_ball']:
+            fraction = round((bowl_stat.overs_bowled % 1) * 10)
+            completed_overs = int(bowl_stat.overs_bowled)
+            fraction += 1
+            if fraction == 6:
+                completed_overs += 1
+                fraction = 0
+            bowl_stat.overs_bowled = completed_overs + (fraction / 10.0)
         
         if ball.is_dot_ball:
             bowl_stat.dot_balls += 1
@@ -423,3 +469,102 @@ class MatchEngine:
     def resume_match(self):
         """Resume match (state already loaded)."""
         pass
+
+    def undo_last_ball(self) -> bool:
+        """Undo the last ball played and revert all state/stats."""
+        if not self.ball_history:
+            return False
+        
+        last_ball = self.ball_history.pop()
+        
+        # 1. Reverse Innings End (if this ball ended the match/innings)
+        # If total_wickets reached all out, or chase target reached, or end of over reached total_overs
+        if self.innings_complete:
+            self.innings_complete = False
+            self.innings_number -= 1
+            # Revert innings status in DB
+            self.db.update_innings_status(self.current_innings_id, 'in_progress')
+        
+        # 2. Reverse Over changes
+        # If we are at the start of a new over, this ball must have been the 6th ball
+        if self.current_ball == 0:
+            self.current_over -= 1
+            self.current_ball = 6
+            # Reverse end-of-over strike rotation
+            self.striker_id, self.non_striker_id = self.non_striker_id, self.striker_id
+        else:
+            self.current_ball -= 1
+            # Reverse normal strike rotation (if applicable)
+            if last_ball.wicket_type == 'none' and (last_ball.runs_off_bat + last_ball.extra_runs) % 2 != 0:
+                self.striker_id, self.non_striker_id = self.non_striker_id, self.striker_id
+                
+        # 3. Reverse Wicket substitution (if a wicket fell)
+        if last_ball.wicket_type != 'none':
+            self.total_wickets -= 1
+            # The current striker is the new batsman who came in. 
+            # We must put them back at the front of the queue.
+            # But wait, if they hadn't faced a ball yet, we can delete their stats later.
+            if self.striker_id != last_ball.striker_id:
+                # The actual batsman who was out needs to be restored to striker
+                self.batsmen_queue.insert(0, self.striker_id)
+                self.striker_id = last_ball.striker_id
+        
+        # 4. Reverse Runs
+        self.total_runs -= (last_ball.runs_off_bat + last_ball.extra_runs)
+        
+        # 5. Reverse Stats
+        # Batting stats
+        bat_stat = self.batting_stats[last_ball.striker_id]
+        bat_stat.balls_faced -= 1
+        bat_stat.runs_scored -= (last_ball.runs_off_bat + last_ball.extra_runs)
+        if last_ball.runs_off_bat == 4:
+            bat_stat.boundaries -= 1
+        elif last_ball.runs_off_bat == 6:
+            bat_stat.sixes -= 1
+            
+        if last_ball.wicket_type != 'none':
+            bat_stat.status = 'not_out'
+            
+        self.db.save_batting_stats(
+            self.current_innings_id, last_ball.striker_id,
+            bat_stat.runs_scored, bat_stat.balls_faced,
+            bat_stat.boundaries, bat_stat.sixes, bat_stat.status
+        )
+        
+        # Bowling stats
+        bowl_stat = self.bowling_stats[last_ball.bowler_id]
+        bowl_stat.runs_conceded -= (last_ball.runs_off_bat + last_ball.extra_runs)
+        
+        # Decrement legal deliveries for overs_bowled
+        if last_ball.extras_type not in ['wide', 'no_ball']:
+            fraction = round((bowl_stat.overs_bowled % 1) * 10)
+            completed_overs = int(bowl_stat.overs_bowled)
+            fraction -= 1
+            if fraction < 0:
+                completed_overs -= 1
+                fraction = 5
+            if completed_overs < 0:
+                completed_overs = 0
+                fraction = 0
+            bowl_stat.overs_bowled = completed_overs + (fraction / 10.0)
+
+        if last_ball.is_dot_ball:
+            bowl_stat.dot_balls -= 1
+        if last_ball.extras_type == 'wide':
+            bowl_stat.wides -= 1
+        elif last_ball.extras_type == 'no_ball':
+            bowl_stat.no_balls -= 1
+        if last_ball.wicket_type != 'none':
+            bowl_stat.wickets_taken -= 1
+        
+        self.db.save_bowling_stats(
+            self.current_innings_id, last_ball.bowler_id,
+            bowl_stat.overs_bowled, bowl_stat.runs_conceded,
+            bowl_stat.wickets_taken, bowl_stat.dot_balls,
+            bowl_stat.wides, bowl_stat.no_balls
+        )
+        
+        # 6. Remove ball from DB
+        self.db.delete_ball(last_ball.ball_id)
+        
+        return True

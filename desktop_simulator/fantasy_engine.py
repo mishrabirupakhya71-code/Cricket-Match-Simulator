@@ -275,3 +275,41 @@ class FantasyEngine:
     def get_global_leaderboard(self, limit: int = 10) -> List[Tuple]:
         """Get global leaderboard across all matches."""
         return self.db.get_global_leaderboard(limit)
+
+    def calculate_total_batting_points(self, batting_stats: BattingStats) -> float:
+        """Calculate total batting fantasy points."""
+        points = self.calculate_batting_points(batting_stats)
+        return sum(points.values())
+    
+    def calculate_total_bowling_points(self, bowling_stats: BowlingStats) -> float:
+        """Calculate total bowling fantasy points."""
+        points = self.calculate_bowling_points(bowling_stats)
+        return sum(points.values())
+    
+    def get_live_fantasy_summary(self, match_id: int, batting_stats: Dict[int, BattingStats], bowling_stats: Dict[int, BowlingStats]) -> List[Tuple[str, float]]:
+        """
+        Calculate live fantasy points for all players involved in the match.
+        Returns a sorted list of (player_name, total_points).
+        """
+        player_points = {}
+        
+        # Calculate batting points
+        for pid, stats in batting_stats.items():
+            pts = self.calculate_total_batting_points(stats)
+            player_points[pid] = player_points.get(pid, 0.0) + pts
+            
+        # Calculate bowling points
+        for pid, stats in bowling_stats.items():
+            pts = self.calculate_total_bowling_points(stats)
+            player_points[pid] = player_points.get(pid, 0.0) + pts
+            
+        # Format results
+        summary = []
+        for pid, total_points in player_points.items():
+            player = self.db.get_player(pid)
+            if player:
+                summary.append((player.name, total_points))
+                
+        # Sort by total points in descending order
+        summary.sort(key=lambda x: x[1], reverse=True)
+        return summary

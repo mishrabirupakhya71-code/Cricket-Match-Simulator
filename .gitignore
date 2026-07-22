@@ -60,6 +60,9 @@ logs/
 temp/
 *.temp
 
+# Toss animation output
+desktop_simulator/toss_animation.txt
+
 # Environment variables
 .env
 .env.local

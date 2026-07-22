@@ -96,7 +96,7 @@ class TestStrikeRotationComprehensive(unittest.TestCase):
         self.assertEqual(new_non_striker, self.striker)
     
     def test_complex_over_with_runs(self):
-        """Complex over: 0, 1, 0, 2, 0, 1 runs."""
+        """Complex over: 0, 1, 0, 2, 0, 1 runs — includes end-of-over rotation."""
         runs_sequence = [0, 1, 0, 2, 0, 1]
         
         striker = self.striker
@@ -105,8 +105,10 @@ class TestStrikeRotationComprehensive(unittest.TestCase):
         for runs in runs_sequence:
             striker, non_striker = self._rotate_strike(striker, non_striker, runs)
         
-        # After over: +1 +1 = +2 total (rotate twice)
-        # Striker and non-striker after last rotation
+        # After 6 balls: two odd-run swaps cancel out → striker back to original
+        # Then end-of-over rotation swaps once more
+        striker, non_striker = self._rotate_strike_end_of_over(striker, non_striker)
+        
         self.assertEqual(striker, self.non_striker)
         self.assertEqual(non_striker, self.striker)
     
@@ -198,14 +200,14 @@ class TestStrikeRotationWithMultipleBatters(unittest.TestCase):
     def test_multiple_wickets_in_over(self):
         """Multiple wickets in same over."""
         # Over: Wicket, single, dot, wicket, four, single
-        batters = [1, 2, 3]  # Player 1, 2, 3
+        batters = [1, 2, 3, 4]  # Player 1, 2, 3, 4 (need 4th for 2nd wicket)
         events = [
             ('wicket', None),  # Batter 1 out, Batter 3 comes
             ('single', 1),      # Batter 3 rotates
-            ('dot', 0),         # Batter 3 still striker
-            ('wicket', None),   # Batter 3 out, Batter 2 comes
-            ('four', 4),        # Batter 2 remains (even runs)
-            ('single', 1),      # Batter 2 rotates to non-striker
+            ('dot', 0),         # Batter 2 still striker (after rotation)
+            ('wicket', None),   # Batter 2 out, Batter 4 comes
+            ('four', 4),        # Batter 4 remains (even runs)
+            ('single', 1),      # Batter 4 rotates to non-striker
         ]
         
         striker = batters[0]

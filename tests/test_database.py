@@ -368,20 +368,20 @@ class TestCustomSQLExecution(unittest.TestCase):
         self.assertEqual(len(result), 1)
     
     def test_execute_create_table_query(self):
-        """Execute CREATE TABLE query."""
+        """CREATE TABLE query should be rejected for security."""
         result = self._execute_custom_sql('''
             CREATE TABLE custom_table (
                 id INTEGER PRIMARY KEY,
                 value TEXT
             )
         ''')
-        self.assertTrue(result)
+        self.assertFalse(result)
     
     def test_execute_alter_table_query(self):
-        """Execute ALTER TABLE query."""
+        """ALTER TABLE query should be rejected for security."""
         self.cursor.execute('CREATE TABLE users (id INTEGER, name TEXT)')
         result = self._execute_custom_sql('ALTER TABLE users ADD COLUMN age INTEGER')
-        self.assertTrue(result)
+        self.assertFalse(result)
     
     def test_invalid_query_returns_error(self):
         """Invalid query returns error information."""
@@ -389,16 +389,28 @@ class TestCustomSQLExecution(unittest.TestCase):
         self.assertFalse(result)
     
     def _execute_custom_sql(self, query):
-        """Helper to execute custom SQL."""
+        """Helper to execute custom SQL — mirrors secured DatabaseManager.execute_custom_sql."""
+        _BLOCKED_SQL_KEYWORDS = frozenset({
+            'INSERT', 'UPDATE', 'DELETE', 'DROP', 'ALTER', 'CREATE',
+            'REPLACE', 'TRUNCATE', 'GRANT', 'REVOKE', 'ATTACH', 'DETACH',
+            'PRAGMA', 'VACUUM', 'REINDEX', 'BEGIN', 'COMMIT', 'ROLLBACK',
+            'SAVEPOINT', 'RELEASE',
+        })
         try:
-            if query.strip().upper().startswith('SELECT'):
-                self.cursor.execute(query)
-                return self.cursor.fetchall()
-            else:
-                self.cursor.execute(query)
-                self.conn.commit()
-                return True
-        except Exception as e:
+            cleaned = query.strip()
+            if not cleaned.upper().startswith('SELECT'):
+                return False
+            if ';' in cleaned[:-1]:
+                return False
+            if '--' in cleaned or '/*' in cleaned:
+                return False
+            tokens = cleaned.upper().replace('(', ' ').replace(')', ' ').split()
+            for token in tokens:
+                if token in _BLOCKED_SQL_KEYWORDS:
+                    return False
+            self.cursor.execute(cleaned)
+            return self.cursor.fetchall()
+        except Exception:
             return False
 
 

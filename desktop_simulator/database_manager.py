@@ -242,12 +242,13 @@ class DatabaseManager:
                     sql = f"ALTER TABLE players ADD COLUMN {col} {definition}"
                     try:
                         self.cursor.execute(sql)
-                    except Exception:
-                        # ignore if cannot add (sqlite limitations)
+                    except sqlite3.OperationalError:
+                        # Column may already exist or SQLite limitation; safe to skip
                         pass
             self.conn.commit()
-        except Exception:
-            pass
+        except Exception as e:
+            import sys
+            print(f"Warning: Player table migration failed: {e}", file=sys.stderr)
     
     # PLAYER OPERATIONS
     
@@ -776,16 +777,48 @@ class DatabaseManager:
     
     # CUSTOM SQL OPERATIONS
     
+    # Dangerous SQL keywords that should never be executed via custom SQL
+    _BLOCKED_SQL_KEYWORDS = frozenset([
+        'DROP', 'DELETE', 'UPDATE', 'INSERT', 'ALTER', 'REPLACE',
+        'TRUNCATE', 'CREATE', 'GRANT', 'REVOKE', 'ATTACH', 'DETACH',
+        'PRAGMA', 'VACUUM', 'REINDEX', 'SAVEPOINT', 'RELEASE',
+    ])
+    
     def execute_custom_sql(self, query: str) -> Tuple[bool, Any]:
-        """Execute custom SQL query."""
+        """Execute a read-only custom SQL query (SELECT only).
+        
+        Security: Only SELECT statements are allowed. Dangerous keywords,
+        multiple statements, and SQL comments are blocked to prevent
+        SQL injection attacks.
+        """
         try:
-            if query.strip().upper().startswith('SELECT'):
-                self.cursor.execute(query)
-                return True, self.cursor.fetchall()
-            else:
-                self.cursor.execute(query)
-                self.conn.commit()
-                return True, "Query executed successfully"
+            cleaned = query.strip().rstrip(';').strip()
+            if not cleaned:
+                return False, "Empty query."
+            
+            # Block multiple statements (semicolon inside query body)
+            if ';' in cleaned:
+                return False, "Multiple SQL statements are not allowed."
+            
+            # Block SQL comments that could bypass keyword checks
+            if '--' in cleaned or '/*' in cleaned:
+                return False, "SQL comments are not allowed in custom queries."
+            
+            upper_query = cleaned.upper()
+            
+            # Enforce SELECT-only
+            if not upper_query.startswith('SELECT'):
+                return False, "Only SELECT statements are allowed for security reasons."
+            
+            # Extra safety: check for blocked keywords anywhere in the query
+            # (e.g., subqueries with INSERT, or UNION-based attacks)
+            tokens = upper_query.split()
+            for token in tokens:
+                if token in self._BLOCKED_SQL_KEYWORDS:
+                    return False, f"Blocked SQL keyword '{token}' detected."
+            
+            self.cursor.execute(cleaned)
+            return True, self.cursor.fetchall()
         except Exception as e:
             return False, str(e)
     

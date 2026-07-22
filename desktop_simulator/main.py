@@ -669,6 +669,7 @@ class CricketSimulator:
                 "MATCH OPTIONS",
                 [
                     "Simulate Next Ball (Manual)",
+                    "Tables",
                     "Rewind Last Ball",
                     "Substitute Player (Injury)",
                     "Add New Player Mid-Match",
@@ -679,29 +680,115 @@ class CricketSimulator:
                 clear_screen=False
             )
             
-            choice = self.ui.get_choice_input("Select: ", ["1", "2", "3", "4", "5", "6", "7"])
+            choice = self.ui.get_choice_input("Select: ", ["1", "2", "3", "4", "5", "6", "7", "8"])
             
             if choice == 1:
                 self.simulate_ball_manual()
             elif choice == 2:
-                self.rewind_last_ball()
+                self.show_tables_menu()
             elif choice == 3:
-                self.substitute_player_mid_match()
+                self.rewind_last_ball()
             elif choice == 4:
-                self.add_player_mid_match()
+                self.substitute_player_mid_match()
             elif choice == 5:
-                self.generate_match_summary()
+                self.add_player_mid_match()
             elif choice == 6:
+                self.generate_match_summary()
+            elif choice == 7:
                 if self.current_engine.pause_match():
                     self.state_manager.save_match_state(self.current_engine)
                     self.ui.print_success("Match paused and saved.")
                     match_active = False
                 else:
                     self.ui.print_error("Failed to pause match.")
-            elif choice == 7:
+            elif choice == 8:
                 match_active = False
                 self.ui.print_info("Match ended.")
-    
+
+    def show_tables_menu(self):
+        """Show dynamic runtime tables."""
+        if not self.current_engine:
+            self.ui.print_error("No active match to show tables for.")
+            self.ui.pause()
+            return
+
+        while True:
+            self.ui.print_menu(
+                "TABLES",
+                [
+                    "On-the-go Fours",
+                    "Super Strikers",
+                    "Fantasy Player score card",
+                    "Super Sixes",
+                    "Economy Rates",
+                    "Back to Match"
+                ]
+            )
+            choice = self.ui.get_choice_input("Select: ", ["1", "2", "3", "4", "5", "6"])
+
+            if choice == 1:
+                # On-the-go Fours
+                batters = list(self.current_engine.batting_stats.values())
+                batters.sort(key=lambda x: x.boundaries, reverse=True)
+                rows = []
+                for b in batters:
+                    if b.boundaries >= 1:
+                        player = self.db.get_player(b.player_id)
+                        rows.append([player.name, str(b.boundaries), str(b.runs_scored), str(b.balls_faced)])
+                self.ui.display_custom_table("On-the-go Fours", ["Player", "Fours", "Runs", "Balls"], rows)
+                self.ui.pause()
+
+            elif choice == 2:
+                # Super Strikers
+                batters = list(self.current_engine.batting_stats.values())
+                batters_valid = [b for b in batters if b.balls_faced >= 1]
+                batters_valid.sort(key=lambda x: x.strike_rate(), reverse=True)
+                rows = []
+                for b in batters_valid:
+                    player = self.db.get_player(b.player_id)
+                    rows.append([player.name, f"{b.strike_rate():.2f}", str(b.runs_scored), str(b.balls_faced)])
+                self.ui.display_custom_table("Super Strikers", ["Player", "Strike Rate", "Runs", "Balls"], rows)
+                self.ui.pause()
+
+            elif choice == 3:
+                # Fantasy Player score card
+                summary = self.fantasy_engine.get_live_fantasy_summary(
+                    self.current_engine.match_id,
+                    self.current_engine.batting_stats,
+                    self.current_engine.bowling_stats
+                )
+                rows = [[str(rank), name, f"{points:.1f}"] for rank, (name, points) in enumerate(summary, 1)]
+                self.ui.display_custom_table("Fantasy Player score card", ["Rank", "Player", "Points"], rows)
+                self.ui.pause()
+
+            elif choice == 4:
+                # Super Sixes
+                batters = list(self.current_engine.batting_stats.values())
+                batters.sort(key=lambda x: x.sixes, reverse=True)
+                rows = []
+                for b in batters:
+                    if b.sixes >= 1:
+                        player = self.db.get_player(b.player_id)
+                        rows.append([player.name, str(b.sixes), str(b.runs_scored), str(b.balls_faced)])
+                self.ui.display_custom_table("Super Sixes", ["Player", "Sixes", "Runs", "Balls"], rows)
+                self.ui.pause()
+
+            elif choice == 5:
+                # Economy Rates
+                bowlers = list(self.current_engine.bowling_stats.values())
+                bowlers_valid = [b for b in bowlers if b.overs_bowled > 0]
+                bowlers_valid.sort(key=lambda x: x.economy_rate())
+                rows = []
+                for b in bowlers_valid:
+                    player = self.db.get_player(b.player_id)
+                    over_str = f"{int(b.overs_bowled)}.{int((b.overs_bowled % 1) * 10)}" if b.overs_bowled % 1 != 0 else f"{int(b.overs_bowled)}.0"
+                    rows.append([player.name, f"{b.economy_rate():.2f}", over_str, str(b.runs_conceded), str(b.wickets_taken)])
+                self.ui.display_custom_table("Economy Rates", ["Player", "Economy", "Overs", "Runs", "Wickets"], rows)
+                self.ui.pause()
+
+            elif choice == 6:
+                break
+
     def display_live_match_scorecard(self):
         """Display comprehensive live match scorecard (Fundamental #16)."""
         scorecard = self.current_engine.get_current_scorecard()
@@ -801,6 +888,7 @@ class CricketSimulator:
                 "MATCH OPTIONS",
                 [
                     "Simulate Next Ball (Manual)",
+                    "Tables",
                     "Rewind Last Ball",
                     "Substitute Player (Injury)",
                     "Match Summary",
@@ -810,24 +898,26 @@ class CricketSimulator:
                 clear_screen=False
             )
             
-            choice = self.ui.get_choice_input("Select: ", ["1", "2", "3", "4", "5", "6"])
+            choice = self.ui.get_choice_input("Select: ", ["1", "2", "3", "4", "5", "6", "7"])
             
             if choice == 1:
                 self.simulate_ball_manual()
             elif choice == 2:
-                self.rewind_last_ball()
+                self.show_tables_menu()
             elif choice == 3:
-                self.substitute_player_mid_match()
+                self.rewind_last_ball()
             elif choice == 4:
-                self.generate_match_summary()
+                self.substitute_player_mid_match()
             elif choice == 5:
+                self.generate_match_summary()
+            elif choice == 6:
                 if self.current_engine.pause_match():
                     self.state_manager.save_match_state(self.current_engine)
                     self.ui.print_success("Match paused and saved.")
                     match_active = False
                 else:
                     self.ui.print_error("Failed to pause match.")
-            elif choice == 6:
+            elif choice == 7:
                 match_active = False
                 self.ui.print_info("Match ended.")
     
@@ -855,39 +945,14 @@ class CricketSimulator:
             print(f"Striker: {self.db.get_player(last_ball.striker_id).name}")
             print(f"Bowler: {self.db.get_player(last_ball.bowler_id).name}")
             
-            # Reverse runs
-            total_runs = last_ball.runs_off_bat + last_ball.extra_runs
-            self.current_engine.total_runs -= total_runs
+            success = self.current_engine.undo_last_ball()
             
-            # Reverse wicket
-            if last_ball.wicket_type != 'none':
-                self.current_engine.total_wickets -= 1
-                # If dismissed, restore batsman
-                striker = self.db.get_player(last_ball.striker_id)
-                self.ui.print_success(f"Restored batsman: {striker.name}")
-            
-            # Reverse strike rotation
-            if (last_ball.runs_off_bat + last_ball.extra_runs) % 2 != 0:
-                self.current_engine.striker_id, self.current_engine.non_striker_id = \
-                    self.current_engine.non_striker_id, self.current_engine.striker_id
-            
-            # Decrement ball counter
-            self.current_engine.current_ball -= 1
-            
-            # If over resets
-            if self.current_engine.current_ball == 0:
-                self.current_engine.current_over -= 1
-                self.current_engine.current_ball = 6
-            
-            # Remove from history
-            self.current_engine.ball_history.pop()
-            
-            # Remove from database
-            self.db.delete_ball(last_ball.ball_id)
-            
-            self.ui.print_success("Ball successfully rewound!")
-            print(f"New Score: {self.current_engine.total_runs}/{self.current_engine.total_wickets}")
-            print(f"Overs: {self.current_engine.current_over}.{self.current_engine.current_ball}")
+            if success:
+                self.ui.print_success("Ball successfully rewound!")
+                print(f"New Score: {self.current_engine.total_runs}/{self.current_engine.total_wickets}")
+                print(f"Overs: {self.current_engine.current_over}.{self.current_engine.current_ball}")
+            else:
+                self.ui.print_error("Failed to rewind ball programmatically.")
             
         except Exception as e:
             self.ui.print_error(f"Rewind failed: {str(e)}")
